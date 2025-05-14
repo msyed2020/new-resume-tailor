@@ -56,17 +56,15 @@ ${jobDescription}
 Return the improved resume in professional formatting (bullet points, spacing, etc).
 `;
 
-    const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
-      model: 'mistralai/mistral-7b-instruct:free',
+    const response = await axios.post('https://api.openai.com/v1/chat/completions', {
+      model: 'gpt-4',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.7,
       max_tokens: 2000
     }, {
       headers: {
-        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-        'X-Title': 'Resume Tailor App'
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
       }
     });
 
