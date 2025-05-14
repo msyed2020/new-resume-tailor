@@ -54,7 +54,7 @@ export default function Home() {
     try {
       const formData = new FormData();
       if (fileName) {
-        const file = document.querySelector('input[type="file"]')?.files?.[0];
+        const file = (document.querySelector('input[type="file"]') as HTMLInputElement)?.files?.[0];
         if (file) formData.append('resumeFile', file);
       } else {
         formData.append('resume', resumeText);
