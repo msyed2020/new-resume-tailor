@@ -1,16 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile } from 'fs/promises';
+import { writeFile, readFile } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import pdfParse from 'pdf-parse';
 import axios from 'axios';
+import formidable, { File as FormidableFile } from 'formidable';
+import { Readable } from 'stream';
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
+async function parseForm(req: any): Promise<{ fields: formidable.Fields; files: formidable.Files }> {
+  return new Promise((resolve, reject) => {
+    const form = formidable({ multiples: false });
+    form.parse(req, (err: any, fields: formidable.Fields, files: formidable.Files) => {
+      if (err) reject(err);
+      else resolve({ fields, files });
+    });
+  });
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData();
-    const resumeFile = formData.get('resumeFile') as File | null;
-    const resumeText = formData.get('resume') as string;
-    const jobDescription = formData.get('job') as string;
+    // Parse the form using formidable
+    // @ts-ignore
+    const { fields, files } = await parseForm(request);
+    const resumeFile = files.resumeFile as FormidableFile | undefined;
+    const resumeText = fields.resume as string | undefined;
+    const jobDescription = fields.job as string | undefined;
 
     if (!jobDescription) {
       return NextResponse.json(
@@ -19,13 +39,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let finalResumeText = resumeText;
+    let finalResumeText = resumeText || '';
 
     // If a PDF file was uploaded, extract text from it
-    if (resumeFile) {
-      const bytes = await resumeFile.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-      
+    if (resumeFile && resumeFile.filepath) {
+      const buffer = await readFile(resumeFile.filepath);
       try {
         const data = await pdfParse(buffer);
         finalResumeText = data.text;
@@ -75,7 +93,7 @@ Return the improved resume in professional formatting (bullet points, spacing, e
     const tailored = response.data.choices[0].message.content;
 
     // Store the original and tailored resumes in the session
-    const session = await request.cookies.get('session')?.value;
+    const session = request.cookies.get('session')?.value;
     if (session) {
       // Store in a temporary file since we can't use express-session
       const sessionData = {
