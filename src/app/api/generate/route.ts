@@ -13,10 +13,10 @@ export const config = {
   },
 };
 
-async function parseForm(req: any): Promise<{ fields: formidable.Fields; files: formidable.Files }> {
+async function parseForm(req: any): Promise<{ fields: any; files: any }> {
   return new Promise((resolve, reject) => {
     const form = formidable({ multiples: false });
-    form.parse(req, (err: any, fields: formidable.Fields, files: formidable.Files) => {
+    form.parse(req, (err: any, fields: any, files: any) => {
       if (err) reject(err);
       else resolve({ fields, files });
     });
@@ -26,9 +26,8 @@ async function parseForm(req: any): Promise<{ fields: formidable.Fields; files: 
 export async function POST(request: NextRequest) {
   try {
     // Parse the form using formidable
-    // @ts-ignore
     const { fields, files } = await parseForm(request);
-    const resumeFile = files.resumeFile as FormidableFile | undefined;
+    const resumeFile = files.resumeFile as File | undefined;
     const resumeText = fields.resume as string | undefined;
     const jobDescription = fields.job as string | undefined;
 
@@ -42,8 +41,8 @@ export async function POST(request: NextRequest) {
     let finalResumeText = resumeText || '';
 
     // If a PDF file was uploaded, extract text from it
-    if (resumeFile && resumeFile.filepath) {
-      const buffer = await readFile(resumeFile.filepath);
+    if (resumeFile && 'filepath' in resumeFile) {
+      const buffer = await readFile(resumeFile.filepath as string);
       try {
         const data = await pdfParse(buffer);
         finalResumeText = data.text;
