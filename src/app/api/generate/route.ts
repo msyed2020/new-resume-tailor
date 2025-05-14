@@ -110,7 +110,12 @@ Return the improved resume in professional formatting (bullet points, spacing, e
     });
 
   } catch (error: any) {
-    console.error('Error:', error);
+    // Improved error logging for debugging
+    if (error.response) {
+      console.error('OpenAI API error:', error.response.status, error.response.data);
+    } else {
+      console.error('Error:', error.message || error);
+    }
     let errorMessage = 'Failed to generate tailored resume. ';
     
     if (error.response?.data?.error) {
