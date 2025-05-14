@@ -1,0 +1,122 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { writeFile } from 'fs/promises';
+import { join } from 'path';
+import { tmpdir } from 'os';
+import pdfParse from 'pdf-parse';
+import axios from 'axios';
+
+export async function POST(request: NextRequest) {
+  try {
+    const formData = await request.formData();
+    const resumeFile = formData.get('resumeFile') as File | null;
+    const resumeText = formData.get('resume') as string;
+    const jobDescription = formData.get('job') as string;
+
+    if (!jobDescription) {
+      return NextResponse.json(
+        { error: 'Job description is required' },
+        { status: 400 }
+      );
+    }
+
+    let finalResumeText = resumeText;
+
+    // If a PDF file was uploaded, extract text from it
+    if (resumeFile) {
+      const bytes = await resumeFile.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      
+      try {
+        const data = await pdfParse(buffer);
+        finalResumeText = data.text;
+      } catch (error) {
+        return NextResponse.json(
+          { error: 'Failed to parse PDF file' },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (!finalResumeText) {
+      return NextResponse.json(
+        { error: 'Resume text or PDF file is required' },
+        { status: 400 }
+      );
+    }
+
+    const prompt = `
+You are an expert resume writer. Please modify the following resume to better fit the job description using relevant keywords and experiences.
+
+Resume:
+${finalResumeText}
+
+Job Description:
+${jobDescription}
+
+Return the improved resume in professional formatting (bullet points, spacing, etc).
+`;
+
+    const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
+      model: 'mistralai/mistral-7b-instruct:free',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.7,
+      max_tokens: 2000
+    }, {
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+        'X-Title': 'Resume Tailor App'
+      }
+    });
+
+    if (!response.data || !response.data.choices || !response.data.choices[0]) {
+      throw new Error('Invalid response from AI service');
+    }
+
+    const tailored = response.data.choices[0].message.content;
+
+    // Store the original and tailored resumes in the session
+    const session = await request.cookies.get('session')?.value;
+    if (session) {
+      // Store in a temporary file since we can't use express-session
+      const sessionData = {
+        originalResume: finalResumeText,
+        tailoredResume: tailored
+      };
+      const sessionPath = join(tmpdir(), `resume-tailor-${session}.json`);
+      await writeFile(sessionPath, JSON.stringify(sessionData));
+    }
+
+    // Return both versions for comparison
+    return NextResponse.json({
+      original: formatResumeForDisplay(finalResumeText),
+      tailored: formatResumeForDisplay(tailored)
+    });
+
+  } catch (error: any) {
+    console.error('Error:', error);
+    let errorMessage = 'Failed to generate tailored resume. ';
+    
+    if (error.response?.data?.error) {
+      errorMessage += error.response.data.error;
+    } else if (error.response?.status === 401) {
+      errorMessage += 'Authentication failed. Please check your API key.';
+    } else if (error.response?.status === 429) {
+      errorMessage += 'Rate limit exceeded. Please try again later.';
+    } else {
+      errorMessage += 'Please try again later.';
+    }
+    
+    return NextResponse.json(
+      { error: errorMessage },
+      { status: 500 }
+    );
+  }
+}
+
+// Helper function to format resume text for display
+function formatResumeForDisplay(text: string) {
+  // Convert line breaks to <br> tags
+  return text.replace(/\n/g, '<br>');
+} 
