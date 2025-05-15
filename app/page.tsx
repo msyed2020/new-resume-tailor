@@ -198,37 +198,71 @@ export default function Home() {
           )}
 
           {comparison && (
-            <div className="mt-10">
-              <h3 className="text-2xl font-bold text-indigo-700 mb-6 text-center">See Your Resume Transformation</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="border rounded-xl p-6 bg-gray-50 shadow-sm">
-                  <h4 className="font-semibold text-gray-700 mb-3 text-center">Original Resume</h4>
-                  <div className="prose max-w-none text-sm" dangerouslySetInnerHTML={{ __html: comparison.original }} />
-                </div>
-                <div className="border rounded-xl p-6 bg-green-50 shadow-sm">
-                  <h4 className="font-semibold text-green-700 mb-3 text-center">Tailored Resume</h4>
-                  <div className="prose max-w-none text-sm" dangerouslySetInnerHTML={{ __html: comparison.tailored }} />
-                </div>
-              </div>
-              <div className="mt-6 flex justify-center space-x-4">
+            <div className="mt-12 space-y-8">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-gray-900">Resume Comparison</h2>
                 <button
                   onClick={handleAccept}
-                  className="inline-flex items-center px-5 py-2 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-400 transition-all"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
                   Download PDF
                 </button>
-                <button
-                  onClick={() => setComparison(null)}
-                  className="inline-flex items-center px-5 py-2 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-400 transition-all"
-                >
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                  Regenerate
-                </button>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Original Resume */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                      <svg className="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Original Resume
+                    </h3>
+                  </div>
+                  <div className="p-6 prose prose-indigo max-w-none">
+                    <div dangerouslySetInnerHTML={{ __html: comparison.original }} />
+                  </div>
+                </div>
+
+                {/* Tailored Resume */}
+                <div className="bg-white rounded-xl shadow-sm border border-indigo-100 overflow-hidden">
+                  <div className="bg-indigo-50 px-6 py-4 border-b border-indigo-100">
+                    <h3 className="text-lg font-semibold text-indigo-900 flex items-center">
+                      <svg className="w-5 h-5 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      Tailored Resume
+                    </h3>
+                  </div>
+                  <div className="p-6 prose prose-indigo max-w-none">
+                    <div dangerouslySetInnerHTML={{ __html: comparison.tailored }} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-blue-800">Tips for Reviewing</h3>
+                    <div className="mt-2 text-sm text-blue-700">
+                      <ul className="list-disc pl-5 space-y-1">
+                        <li>Review the tailored resume to ensure it accurately represents your experience</li>
+                        <li>Check that all formatting and spacing looks correct</li>
+                        <li>Verify that the content aligns with the job description</li>
+                        <li>Download the PDF when you're satisfied with the changes</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}

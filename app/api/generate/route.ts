@@ -25,13 +25,20 @@ async function parseForm(req: any): Promise<{ fields: any; files: any }> {
 
 export async function POST(request: NextRequest) {
   try {
-    // Parse the form using formidable
+    console.log('Received request');
+    console.log('Parsing form...');
     const { fields, files } = await parseForm(request);
+    console.log('Form fields:', fields);
+    console.log('Form files:', files);
     const resumeFile = files.resumeFile as File | undefined;
     const resumeText = fields.resume as string | undefined;
     const jobDescription = fields.job as string | undefined;
 
+    console.log('Job description:', jobDescription);
+    console.log('Resume text:', resumeText);
+
     if (!jobDescription) {
+      console.log('No job description provided');
       return NextResponse.json(
         { error: 'Job description is required' },
         { status: 400 }
@@ -42,11 +49,14 @@ export async function POST(request: NextRequest) {
 
     // If a PDF file was uploaded, extract text from it
     if (resumeFile && 'filepath' in resumeFile) {
+      console.log('PDF file detected, reading file...');
       const buffer = await readFile(resumeFile.filepath as string);
       try {
         const data = await pdfParse(buffer);
         finalResumeText = data.text;
+        console.log('PDF parsed, extracted text length:', finalResumeText.length);
       } catch (error) {
+        console.log('Failed to parse PDF file:', error);
         return NextResponse.json(
           { error: 'Failed to parse PDF file' },
           { status: 400 }
@@ -55,6 +65,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!finalResumeText) {
+      console.log('No resume text or PDF file provided');
       return NextResponse.json(
         { error: 'Resume text or PDF file is required' },
         { status: 400 }
@@ -73,34 +84,44 @@ ${jobDescription}
 Return the improved resume in professional formatting (bullet points, spacing, etc).
 `;
 
-    const response = await axios.post('https://api.openai.com/v1/chat/completions', {
-      model: 'gpt-4',
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.7,
-      max_tokens: 2000
-    }, {
-      headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        'Content-Type': 'application/json'
-      }
-    });
+    console.log('Sending prompt to OpenAI. Prompt length:', prompt.length);
+    let response;
+    try {
+      response = await axios.post('https://api.openai.com/v1/chat/completions', {
+        model: 'gpt-4',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7,
+        max_tokens: 2000
+      }, {
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      console.log('OpenAI response received');
+    } catch (err: any) {
+      console.log('Error during OpenAI API call:', err.response?.status, err.response?.data || err.message);
+      throw err;
+    }
 
     if (!response.data || !response.data.choices || !response.data.choices[0]) {
+      console.log('Invalid response from AI service:', response.data);
       throw new Error('Invalid response from AI service');
     }
 
     const tailored = response.data.choices[0].message.content;
+    console.log('Tailored resume received, length:', tailored.length);
 
     // Store the original and tailored resumes in the session
     const session = request.cookies.get('session')?.value;
     if (session) {
-      // Store in a temporary file since we can't use express-session
       const sessionData = {
         originalResume: finalResumeText,
         tailoredResume: tailored
       };
       const sessionPath = join(tmpdir(), `resume-tailor-${session}.json`);
       await writeFile(sessionPath, JSON.stringify(sessionData));
+      console.log('Session data written to', sessionPath);
     }
 
     // Return both versions for comparison
